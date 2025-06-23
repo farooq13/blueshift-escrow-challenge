@@ -43,47 +43,49 @@ pub struct Make<'info> {
 }
 
 impl<'info> Make<'info> {
-        fn populate_escrow(&mut self, seed: u64, amount: u64, bump: u8) -> Result <()> {
-            self.escrow.set_inner(Escrow {
-                seed,
-                maker: self.maker.key(),
-                mint_a: self.mint_a.key(),
-                mint_b: self.mint_b.key(),
-                receive: amount,
-                bump
-            });
-
-            Ok(())
-        }
-    }
-
-/// # Deposit the tokens
-    fn deposit_tokens(&self, amount: u64) -> Result<()> {
-        transfer_checked(
-            CpiContext::new(
-                self.token_program.to_account.info(),
-                TransferChecked {
-                    from: self.maker_ata_a.to_account_info(),
-                    mint: self.mint_a.to_account_info(),
-                    to: self.vault.to_account_info(),
-                    authority: self.maker.to_account_info(),
-                }
-            ), amount, self.mint_a.decimals
-        )?;
+    fn populate_escrow(&mut self, seed: u64, amount: u64, bump: u8) -> Result <()> {
+        self.escrow.set_inner(Escrow {
+            seed,
+            maker: self.maker.key(),
+            mint_a: self.mint_a.key(),
+            mint_b: self.mint_b.key(),
+            receive: amount,
+            bump
+        });
 
         Ok(())
     }
 
-pub fn handler(ctx: Context<Make>, seed: u64, receive: u64, amount: u64) -> Result<()> {
-  // Validate the amount
-  require_gte!(receive, 0, EscrowError::InvalidAmount);
-  require_gte!(amount, 0, EscrowError::InvalidAmount);
+    /// # Deposit the tokens
+  fn deposit_tokens(&self, amount: u64) -> Result<()> {
+      transfer_checked(
+          CpiContext::new(
+              self.token_program.to_account.info(),
+              TransferChecked {
+                  from: self.maker_ata_a.to_account_info(),
+                  mint: self.mint_a.to_account_info(),
+                  to: self.vault.to_account_info(),
+                  authority: self.maker.to_account_info(),
+              }
+          ), amount, self.mint_a.decimals
+      )?;
 
-  // Save the Escrow Data
-  ctx.accounts.populate_escrow(seed, receive, ctx.bumps.escrow)?;
+      Ok(())
+  }
 
-  // Deposit Tokens
-  ctx.accounts.deposit_tokens(amount)?;
+  pub fn handler(ctx: Context<Make>, seed: u64, receive: u64, amount: u64) -> Result<()> {
+    // Validate the amount
+    require_gte!(receive, 0, EscrowError::InvalidAmount);
+    require_gte!(amount, 0, EscrowError::InvalidAmount);
 
-  Ok(())
+    // Save the Escrow Data
+    ctx.accounts.populate_escrow(seed, receive, ctx.bumps.escrow)?;
+
+    // Deposit Tokens
+    ctx.accounts.deposit_tokens(amount)?;
+
+    Ok(())
+  }
+
 }
+
